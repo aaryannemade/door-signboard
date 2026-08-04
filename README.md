@@ -54,10 +54,9 @@ Enter the pinned Nix development environment:
 nix develop
 ```
 
-The shell provides Python, Pillow (`PIL`), NumPy, `spidev`, WebSockets, and
-DejaVu fonts.
-The Waveshare hardware library will be integrated with the display driver
-separately.
+The shell provides Python, Pillow (`PIL`), NumPy, GPIO Zero, `spidev`,
+WebSockets, and DejaVu fonts. The vendored Waveshare module is imported only in
+hardware mode, so preview development does not access GPIO or SPI.
 
 ## Image Generator
 
@@ -106,7 +105,7 @@ line is rendered.
 From the repository root, run this code with `PYTHONPATH=src` until the package
 installation configuration is added.
 
-## Preview Client
+## Signboard Client
 
 Validate the ignored credentials file without connecting:
 
@@ -114,18 +113,77 @@ Validate the ignored credentials file without connecting:
 PYTHONPATH=src python -m door_signboard.main --check-config
 ```
 
-Run the WebSocket client:
+Run the WebSocket client in preview mode (the default):
 
 ```console
 PYTHONPATH=src python -m door_signboard.main
 ```
 
 Changing a Door Signboard entity in Home Assistant generates the latest image
-at `tmp/generated-images/ha-preview.png`. The physical display driver will
-replace this preview callback in the next implementation phase.
+at `tmp/generated-images/ha-preview.png`.
+
+On the Raspberry Pi, update the physical display with:
+
+```console
+PYTHONPATH=src python -m door_signboard.main --output-mode hardware
+```
+
+Hardware mode performs full GC refreshes, defaults to at least 180 seconds
+between physical updates, and retains only the latest Home Assistant revision
+while waiting. Override the interval or 30-second BUSY timeout only when
+diagnosing the panel:
+
+```console
+PYTHONPATH=src python -m door_signboard.main --output-mode hardware \
+  --minimum-refresh-interval 180 --busy-timeout 30
+```
+
+## Raspberry Pi Setup
+
+Install Raspberry Pi OS packages and enable SPI:
+
+```console
+sudo apt update
+sudo apt install git python3-gpiozero python3-numpy python3-pil python3-spidev python3-venv
+sudo raspi-config nonint do_spi 0
+test -e /dev/spidev0.0
+```
+
+For a dedicated service account and an installation at
+`/opt/door-signboard`:
+
+```console
+sudo useradd --system --home /opt/door-signboard --shell /usr/sbin/nologin door-signboard
+sudo install -d -o door-signboard -g door-signboard /opt/door-signboard
+sudo -u door-signboard git clone https://github.com/aaryannemade/door-signboard.git /opt/door-signboard
+sudo -u door-signboard python3 -m venv --system-site-packages /opt/door-signboard/.venv
+sudo -u door-signboard /opt/door-signboard/.venv/bin/pip install 'websockets>=14,<16'
+sudo usermod -aG gpio,spi door-signboard
+sudo install -m 600 -o door-signboard -g door-signboard credentials.secret /opt/door-signboard/credentials.secret
+sudo chmod 600 /opt/door-signboard/credentials.secret
+sudo cp /opt/door-signboard/deploy/door-signboard.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now door-signboard.service
+```
+
+Inspect runtime status and logs with:
+
+```console
+systemctl status door-signboard.service
+journalctl -u door-signboard.service -f
+```
+
+After updating the checkout, restart it with
+`sudo systemctl restart door-signboard.service`. The unit waits for networking,
+restarts after failures, and uses `SIGINT` so the client can report offline and
+release display resources during shutdown.
+
+The adapted Waveshare source, source hashes, license, and modifications are
+documented in `src/door_signboard/vendor/waveshare_epd/README.md`.
 
 ## Tests
 
 ```console
 PYTHONPATH=src python -m unittest discover -s tests -v
+nix flake check path:.
 ```

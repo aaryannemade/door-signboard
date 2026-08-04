@@ -116,10 +116,15 @@ class HomeAssistantWebSocketClient:
                 delay = min(delay * 2, self._reconnect_max_seconds)
 
     async def stop(self) -> None:
-        if self._websocket is not None:
-            await self.report_status("offline")
-            await self._websocket.close()
         self._stopped.set()
+        websocket = self._websocket
+        if websocket is not None:
+            try:
+                await self.report_status("offline")
+            except Exception as error:
+                logger.warning("Failed to report offline status: %s", error)
+            finally:
+                await websocket.close()
 
     async def report_applied(self, state: DesiredState) -> None:
         await self.report_status(
@@ -155,6 +160,9 @@ class HomeAssistantWebSocketClient:
                 device_id=self.config.device_id,
             )
             await self._expect_success(websocket, subscription_id)
+            # The first event in each session is HA's canonical current state.
+            # Reconsider it so a previous display or status failure can recover.
+            self._last_revision = -1
             await self.report_status("online")
             heartbeat = asyncio.create_task(self._heartbeat())
             try:

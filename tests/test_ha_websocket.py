@@ -1,5 +1,6 @@
 import json
 import unittest
+from unittest.mock import patch
 
 from door_signboard import Scene
 from door_signboard.config import HomeAssistantConfig
@@ -49,15 +50,42 @@ class DesiredStateTests(unittest.TestCase):
 
 
 class FakeWebSocket:
-    def __init__(self, incoming):
+    def __init__(self, incoming, *, fail_send=False):
         self.incoming = [json.dumps(message) for message in incoming]
         self.sent = []
+        self.fail_send = fail_send
+        self.closed = False
+        self.events = []
 
     async def recv(self):
         return self.incoming.pop(0)
 
     async def send(self, message):
+        if self.fail_send:
+            raise ConnectionError("disconnected")
         self.sent.append(json.loads(message))
+
+    async def close(self):
+        self.closed = True
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        if not self.events:
+            raise StopAsyncIteration
+        return json.dumps(self.events.pop(0))
+
+
+class FakeConnectionContext:
+    def __init__(self, websocket):
+        self.websocket = websocket
+
+    async def __aenter__(self):
+        return self.websocket
+
+    async def __aexit__(self, *args):
+        return False
 
 
 class WebSocketClientTests(unittest.IsolatedAsyncioTestCase):
@@ -115,6 +143,45 @@ class WebSocketClientTests(unittest.IsolatedAsyncioTestCase):
                 }
             ],
         )
+
+    async def test_stop_closes_socket_when_offline_report_fails(self) -> None:
+        websocket = FakeWebSocket([], fail_send=True)
+        client = HomeAssistantWebSocketClient(
+            HomeAssistantConfig("http://ha.local:8123", "token"),
+            self._handle_state,
+        )
+        client._websocket = websocket
+
+        await client.stop()
+
+        self.assertTrue(websocket.closed)
+        self.assertTrue(client._stopped.is_set())
+
+    async def test_reconnect_reconsiders_current_revision(self) -> None:
+        websocket = FakeWebSocket(
+            [
+                {"type": "auth_required"},
+                {"type": "auth_ok"},
+                {"type": "result", "id": 1, "success": True},
+            ]
+        )
+        websocket.events = [
+            {"id": 1, "type": "event", "event": desired_payload()}
+        ]
+        self.states = []
+        client = HomeAssistantWebSocketClient(
+            HomeAssistantConfig("http://ha.local:8123", "token"),
+            self._handle_state,
+        )
+        client._last_revision = 1
+
+        with patch(
+            "door_signboard.ha_websocket.connect",
+            return_value=FakeConnectionContext(websocket),
+        ):
+            await client._run_session()
+
+        self.assertEqual([state.revision for state in self.states], [1])
 
     async def _handle_state(self, state) -> None:
         if hasattr(self, "states"):

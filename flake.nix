@@ -13,6 +13,7 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
           python = pkgs.python3.withPackages (pythonPackages: with pythonPackages; [
+            gpiozero
             numpy
             pillow
             spidev
