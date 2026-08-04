@@ -37,6 +37,81 @@ class DisplayTests(unittest.TestCase):
         self.assertEqual(content.message_for(Scene.AWAY), "away text")
         self.assertEqual(content.message_for(Scene.BUSY), "busy text")
 
+    def test_message_scenes_have_black_header_banners(self) -> None:
+        delivery = generate_image(Scene.DELIVERY)
+        away = generate_image(Scene.AWAY)
+        busy = generate_image(Scene.BUSY)
+
+        self.assertEqual(delivery.getpixel((3, 3)), 0)
+        self.assertEqual(delivery.getpixel((356, 42)), 0)
+        self.assertEqual(away.getpixel((3, 3)), 0)
+        self.assertEqual(away.getpixel((356, 42)), 0)
+        self.assertEqual(busy.getpixel((3, 3)), 0)
+        self.assertEqual(busy.getpixel((356, 42)), 0)
+
+    def test_delivery_and_busy_do_not_show_phone_number(self) -> None:
+        first = SignContent(apartment_number="42", phone_number="111")
+        second = SignContent(apartment_number="42", phone_number="999")
+        different_apartment = SignContent(apartment_number="43", phone_number="111")
+
+        for scene in (Scene.DELIVERY, Scene.BUSY):
+            first_image = generate_image(scene, first).tobytes()
+
+            self.assertEqual(first_image, generate_image(scene, second).tobytes())
+            self.assertNotEqual(
+                first_image,
+                generate_image(scene, different_apartment).tobytes(),
+            )
+
+    def test_away_scene_shows_phone_and_apartment_separately(self) -> None:
+        original = SignContent(apartment_number="42", phone_number="110000000000")
+        different_phone = SignContent(
+            apartment_number="42", phone_number="990000000000"
+        )
+        different_apartment = SignContent(
+            apartment_number="43", phone_number="110000000000"
+        )
+        original_image = generate_image(Scene.AWAY, original).tobytes()
+
+        self.assertNotEqual(
+            original_image,
+            generate_image(Scene.AWAY, different_phone).tobytes(),
+        )
+        self.assertNotEqual(
+            original_image,
+            generate_image(Scene.AWAY, different_apartment).tobytes(),
+        )
+
+    def test_delivery_otp_is_optional_and_only_changes_delivery(self) -> None:
+        without_otp = SignContent(delivery_otp=None)
+        empty_otp = SignContent(delivery_otp="  ")
+        with_otp = SignContent(delivery_otp="123456")
+
+        delivery_without_otp = generate_image(Scene.DELIVERY, without_otp).tobytes()
+        self.assertEqual(
+            delivery_without_otp,
+            generate_image(Scene.DELIVERY, empty_otp).tobytes(),
+        )
+        self.assertNotEqual(
+            delivery_without_otp,
+            generate_image(Scene.DELIVERY, with_otp).tobytes(),
+        )
+        self.assertEqual(
+            generate_image(Scene.AWAY, without_otp).tobytes(),
+            generate_image(Scene.AWAY, with_otp).tobytes(),
+        )
+
+    def test_phone_number_is_formatted_with_country_code(self) -> None:
+        with_plus = SignContent(phone_number="+919876543210")
+        without_plus = SignContent(phone_number="919876543210")
+
+        self.assertEqual(with_plus.formatted_phone_number(), "+91 98765 43210")
+        self.assertEqual(without_plus.formatted_phone_number(), "+91 98765 43210")
+
+    def test_invalid_phone_number_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "exactly 12 digits"):
+            SignContent(phone_number="+91 98765 43210").formatted_phone_number()
+
     def test_default_scene_ignores_scene_messages_and_phone_number(self) -> None:
         first = SignContent(
             name="Resident",
