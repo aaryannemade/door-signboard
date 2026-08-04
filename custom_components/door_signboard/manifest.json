@@ -1,0 +1,14 @@
+{
+  "domain": "door_signboard",
+  "name": "Door Signboard",
+  "codeowners": ["@aaryannemade"],
+  "config_flow": true,
+  "dependencies": ["websocket_api"],
+  "documentation": "https://github.com/aaryannemade/door-signboard",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/aaryannemade/door-signboard/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

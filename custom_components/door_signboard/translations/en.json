@@ -1,0 +1,45 @@
+{
+  "title": "Door Signboard",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Door Signboard",
+        "description": "Create the Door Signboard device and its editable entities."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only one Door Signboard can be configured."
+    }
+  },
+  "entity": {
+    "select": {
+      "scene": {
+        "name": "Scene",
+        "state": {
+          "default": "Default",
+          "delivery": "Delivery",
+          "away": "Away",
+          "busy": "Busy"
+        }
+      }
+    },
+    "text": {
+      "apartment_number": { "name": "Apartment number" },
+      "resident_name": { "name": "Resident name" },
+      "phone_number": { "name": "Phone number" },
+      "delivery_message": { "name": "Delivery message" },
+      "delivery_otp": { "name": "Delivery OTP" },
+      "away_message": { "name": "Away message" },
+      "busy_message": { "name": "Busy message" }
+    },
+    "binary_sensor": {
+      "connected": { "name": "Connected" }
+    },
+    "sensor": {
+      "desired_revision": { "name": "Desired revision" },
+      "applied_revision": { "name": "Applied revision" },
+      "last_applied_scene": { "name": "Last applied scene" },
+      "last_error": { "name": "Last error" }
+    }
+  }
+}
