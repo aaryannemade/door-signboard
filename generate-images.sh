@@ -7,7 +7,7 @@ output_dir="$root_dir/tmp/generated-images"
 
 mkdir -p "$output_dir"
 
-PYTHONPATH="$root_dir/src${PYTHONPATH:+:$PYTHONPATH}" python - "$output_dir" <<'PYTHON'
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$root_dir/src${PYTHONPATH:+:$PYTHONPATH}" python - "$output_dir" <<'PYTHON'
 from pathlib import Path
 import sys
 

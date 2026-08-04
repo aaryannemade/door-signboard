@@ -46,3 +46,12 @@ class SignContent:
         if len(digits) != 12 or not digits.isdigit():
             raise ValueError("Phone number must contain exactly 12 digits")
         return f"+{digits[:2]} {digits[2:7]} {digits[7:]}"
+
+
+@dataclass(frozen=True)
+class DesiredState:
+    """A complete, revisioned desired state received from Home Assistant."""
+
+    revision: int
+    scene: Scene
+    content: SignContent
