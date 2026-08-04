@@ -155,18 +155,20 @@ It should not know about MQTT, Home Assistant, text fields, or scene layouts.
 
 ### `display.py`
 
-Responsibility: turn validated sign content into an image using Pillow.
+Responsibility: provide the common Pillow canvas, font loading, text fitting,
+alignment, banner, footer, border, and scene-dispatch behavior.
 
 Suggested interface:
 
 ```python
-def render_scene(state: SignState, settings: DisplaySettings) -> Image.Image:
+def generate_image(scene: Scene, content: SignContent) -> Image.Image:
     ...
 ```
 
 It should:
 
-- contain the two scene layout implementations;
+- expose reusable drawing operations through `RenderContext`;
+- dispatch to the selected module under `scenes/`;
 - load fonts and static assets from an `assets/` directory;
 - handle text wrapping, alignment, truncation, and font sizing;
 - output the exact pixel dimensions and color mode expected by the driver;
@@ -182,8 +184,8 @@ and a name/phone footer:
 3. `away`: displays the configured away message.
 4. `busy`: displays the configured busy message.
 
-The renderer owns these preset layouts. MQTT will select a scene and provide
-content values rather than drawing coordinates.
+Each module under `scenes/` owns one preset layout. MQTT will select a scene and
+provide content values rather than drawing coordinates.
 
 ### `ha_mqtt.py`
 
@@ -243,6 +245,7 @@ class Scene(str, Enum):
 class SignContent:
     apartment_number: str
     delivery_message: str
+    delivery_otp: str | None
     away_message: str
     busy_message: str
     name: str
@@ -312,6 +315,12 @@ door-signboard/
 │       ├── models.py
 │       ├── config.py
 │       ├── display.py
+│       ├── scenes/
+│       │   ├── __init__.py
+│       │   ├── default.py
+│       │   ├── delivery.py
+│       │   ├── away.py
+│       │   └── busy.py
 │       ├── display_driver.py
 │       └── ha_mqtt.py
 ├── assets/
