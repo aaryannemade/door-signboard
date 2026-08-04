@@ -16,6 +16,7 @@
             numpy
             pillow
             spidev
+            websockets
           ]);
         in
         {

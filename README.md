@@ -3,6 +3,49 @@
 A Home Assistant-controlled door sign for a Raspberry Pi Zero W and Waveshare
 3.52-inch e-paper display.
 
+## Architecture
+
+This repository contains both sides of the integration:
+
+- `custom_components/door_signboard/` is installed into Home Assistant by HACS;
+- `src/door_signboard/` runs on the Pi and renders the physical sign;
+- Home Assistant sends complete desired state through integration-owned
+  WebSocket commands;
+- the Pi reports heartbeat, applied revision, and errors through the same API.
+
+No MQTT broker or manually-created Home Assistant Helpers are required.
+
+## HACS Installation
+
+1. Open HACS in Home Assistant.
+2. Open the menu and select **Custom repositories**.
+3. Add `https://github.com/aaryannemade/door-signboard` with category
+   **Integration**.
+4. Find and download **Door Signboard**.
+5. Restart Home Assistant.
+6. Open **Settings > Devices & services > Add integration**.
+7. Select **Door Signboard** and confirm the setup.
+
+The integration creates one device with editable scene, apartment number,
+resident name, phone number, delivery message, delivery OTP, away message, and
+busy message entities. It also creates connection, revision, scene, and error
+diagnostics.
+
+## Pi Credentials
+
+Create a dedicated non-administrator Home Assistant user for the Pi, sign in as
+that user, and create a long-lived access token from its profile page. Create
+`credentials.secret` from `credentials.example`:
+
+```text
+HA-URL: http://homeassistant.local:8123
+HA-TOKEN: replace-with-the-long-lived-access-token
+DEVICE-ID: door_signboard
+```
+
+The secret file is ignored by Git. The token is never included in logs or
+object representations.
+
 ## Development Shell
 
 Enter the pinned Nix development environment:
@@ -11,7 +54,8 @@ Enter the pinned Nix development environment:
 nix develop
 ```
 
-The shell provides Python, Pillow (`PIL`), NumPy, `spidev`, and DejaVu fonts.
+The shell provides Python, Pillow (`PIL`), NumPy, `spidev`, WebSockets, and
+DejaVu fonts.
 The Waveshare hardware library will be integrated with the display driver
 separately.
 
@@ -35,7 +79,7 @@ Default placeholder values are defined in
 - `NAME`
 - `PHONE_NUMBER`
 
-Supply real or MQTT-provided values with `SignContent` rather than changing
+Supply real or Home Assistant-provided values with `SignContent` rather than changing
 layout code:
 
 ```python
@@ -61,6 +105,24 @@ line is rendered.
 
 From the repository root, run this code with `PYTHONPATH=src` until the package
 installation configuration is added.
+
+## Preview Client
+
+Validate the ignored credentials file without connecting:
+
+```console
+PYTHONPATH=src python -m door_signboard.main --check-config
+```
+
+Run the WebSocket client:
+
+```console
+PYTHONPATH=src python -m door_signboard.main
+```
+
+Changing a Door Signboard entity in Home Assistant generates the latest image
+at `tmp/generated-images/ha-preview.png`. The physical display driver will
+replace this preview callback in the next implementation phase.
 
 ## Tests
 
