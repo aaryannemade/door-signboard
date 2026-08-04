@@ -144,7 +144,7 @@ Install Raspberry Pi OS packages and enable SPI:
 
 ```console
 sudo apt update
-sudo apt install git python3-gpiozero python3-numpy python3-pil python3-spidev python3-venv
+sudo apt install fonts-dejavu-core git python3-gpiozero python3-numpy python3-pil python3-spidev python3-venv
 sudo raspi-config nonint do_spi 0
 test -e /dev/spidev0.0
 ```

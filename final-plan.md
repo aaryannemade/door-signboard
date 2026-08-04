@@ -178,6 +178,7 @@ application must never access GPIO or SPI.
 
 Document Raspberry Pi OS installation for:
 
+- `fonts-dejavu-core`;
 - `python3-pil`;
 - `python3-numpy`;
 - `python3-gpiozero`;
