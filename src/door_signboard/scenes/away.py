@@ -6,6 +6,7 @@ from ..display import RenderContext
 
 def render(context: RenderContext, content: SignContent) -> None:
     context.draw_banner("IMPORTANT")
+    # Message on top, then the formatted contact number below it.
     context.draw_fitted_message(content.away_message, (20, 52, 340, 148))
     context.draw_fitted_single_line(
         content.formatted_phone_number(),
