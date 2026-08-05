@@ -147,18 +147,15 @@ async def run(args) -> None:
         output: ImageOutput = Waveshare3in52DisplayDriver(
             busy_timeout_seconds=args.busy_timeout
         )
-        minimum_refresh_interval = (
-            180.0
-            if args.minimum_refresh_interval is None
-            else args.minimum_refresh_interval
-        )
     else:
         output = PreviewImageOutput(args.output)
-        minimum_refresh_interval = (
-            0.0
-            if args.minimum_refresh_interval is None
-            else args.minimum_refresh_interval
-        )
+    # Refresh on every new revision by default. Pass --minimum-refresh-interval
+    # to throttle physical refreshes (e.g. to limit e-ink panel wear).
+    minimum_refresh_interval = (
+        0.0
+        if args.minimum_refresh_interval is None
+        else args.minimum_refresh_interval
+    )
     orchestrator = DisplayOrchestrator(
         output,
         debounce_seconds=args.debounce,
@@ -188,7 +185,14 @@ def main() -> None:
     )
     parser.add_argument("--output", default="tmp/generated-images/ha-preview.png")
     parser.add_argument("--debounce", type=float, default=0.5)
-    parser.add_argument("--minimum-refresh-interval", type=float)
+    parser.add_argument(
+        "--minimum-refresh-interval",
+        type=float,
+        help=(
+            "Minimum seconds between physical display refreshes. "
+            "Defaults to 0 (refresh on every new revision)."
+        ),
+    )
     parser.add_argument("--busy-timeout", type=float, default=30.0)
     parser.add_argument("--check-config", action="store_true")
     args = parser.parse_args()

@@ -128,10 +128,11 @@ On the Raspberry Pi, update the physical display with:
 PYTHONPATH=src python -m door_signboard.main --output-mode hardware
 ```
 
-Hardware mode performs full GC refreshes, defaults to at least 180 seconds
-between physical updates, and retains only the latest Home Assistant revision
-while waiting. Override the interval or 30-second BUSY timeout only when
-diagnosing the panel:
+Hardware mode performs full GC refreshes and, by default, refreshes the panel
+on every new Home Assistant revision (after a short debounce), retaining only
+the latest revision while a refresh is in flight. To throttle physical refreshes
+(for example, to limit e-ink panel wear), set a minimum interval in seconds.
+Override the interval or 30-second BUSY timeout only when diagnosing the panel:
 
 ```console
 PYTHONPATH=src python -m door_signboard.main --output-mode hardware \
