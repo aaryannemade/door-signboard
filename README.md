@@ -113,3 +113,11 @@ sudo systemctl restart door-signboard.service
 
 The adapted Waveshare source, source hashes, license, and modifications are
 documented in `src/door_signboard/vendor/waveshare_epd/README.md`.
+
+## License
+
+This project is licensed under the MIT License; see [LICENSE](LICENSE).
+
+The vendored Waveshare driver under `src/door_signboard/vendor/waveshare_epd/`
+retains its own upstream license notices and is not covered by the MIT license
+above.
