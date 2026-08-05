@@ -5,18 +5,16 @@ After=network-online.target
 
 [Service]
 Type=simple
-User=door-signboard
-Group=door-signboard
-SupplementaryGroups=gpio spi
-WorkingDirectory=/opt/door-signboard
-Environment=PYTHONPATH=/opt/door-signboard/src
-ExecStart=/opt/door-signboard/.venv/bin/python -m door_signboard.main --output-mode hardware
+# Replace <user> with the Linux user that owns the checkout. That user must be
+# in the gpio and spi groups (see the README).
+User=<user>
+WorkingDirectory=/home/<user>/door-signboard
+Environment=PYTHONPATH=/home/<user>/door-signboard/src
+ExecStart=/home/<user>/door-signboard/.venv/bin/python -m door_signboard.main --output-mode hardware
 Restart=on-failure
 RestartSec=10
 KillSignal=SIGINT
 TimeoutStopSec=45
-NoNewPrivileges=true
-PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target

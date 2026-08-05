@@ -53,17 +53,30 @@ test -e /dev/spidev0.0
 
 ## 4. Install and run the service
 
-Install into `/opt/door-signboard` under a dedicated service account:
+Clone the repository into your home directory and create the virtual
+environment (run these as your own user, not root):
 
 ```console
-sudo useradd --system --home /opt/door-signboard --shell /usr/sbin/nologin door-signboard
-sudo install -d -o door-signboard -g door-signboard /opt/door-signboard
-sudo -u door-signboard git clone https://github.com/aaryannemade/door-signboard.git /opt/door-signboard
-sudo -u door-signboard python3 -m venv --system-site-packages /opt/door-signboard/.venv
-sudo -u door-signboard /opt/door-signboard/.venv/bin/pip install 'websockets>=14,<16'
-sudo usermod -aG gpio,spi door-signboard
-sudo install -m 600 -o door-signboard -g door-signboard credentials.secret /opt/door-signboard/credentials.secret
-sudo cp /opt/door-signboard/deploy/door-signboard.service /etc/systemd/system/
+git clone https://github.com/aaryannemade/door-signboard.git ~/door-signboard
+cd ~/door-signboard
+python3 -m venv --system-site-packages .venv
+.venv/bin/pip install 'websockets>=14,<16'
+```
+
+Make sure your user can access the display's GPIO and SPI, then place your
+`credentials.secret` from step 2 in the repository root and lock it down:
+
+```console
+sudo usermod -aG gpio,spi "$USER"   # log out and back in for this to apply
+chmod 600 ~/door-signboard/credentials.secret
+```
+
+The service file ships with `<user>` placeholders. Edit
+`deploy/door-signboard.service` and replace every `<user>` with your Linux
+username, then install and start the service:
+
+```console
+sudo cp ~/door-signboard/deploy/door-signboard.service /etc/systemd/system/door-signboard.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now door-signboard.service
 ```
